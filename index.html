@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Regneark - generator</title>
+<style>
+@page{size:A4 portrait;margin:0}
+@page oversikt{size:A4 landscape;margin:0}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:Arial,Helvetica,sans-serif;background:#e9ecf1;color:#1f2933;font-size:15px}
+button,input,select{font:inherit}
+button{cursor:pointer;border:1px solid #9aa5b4;background:#fff;border-radius:6px;padding:7px 12px;min-height:36px}
+button:hover{background:#eef2f7}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid #2f6fdc;outline-offset:2px}
+button.primary{background:#1f5fbf;border-color:#1f5fbf;color:#fff;font-weight:700}
+button.primary:hover{background:#184c99}
+button.small{padding:3px 8px;min-height:28px;font-size:13px}
+.app{display:grid;grid-template-columns:minmax(300px,390px) 1fr;min-height:100vh}
+.menu{background:#fff;border-right:1px solid #cfd6df;padding:16px;overflow:auto;max-height:100vh;position:sticky;top:0}
+.menu h1{font-size:20px;margin:0 0 4px}
+.hint{color:#52606d;font-size:13px;margin:0 0 12px;line-height:1.4}
+fieldset{border:1px solid #cfd6df;border-radius:8px;margin:0 0 12px;padding:8px 10px 10px}
+legend{font-weight:700;padding:0 6px;font-size:14px}
+.quick{display:flex;flex-wrap:wrap;gap:4px;margin:2px 0 8px}
+.grp{margin:8px 0 2px}
+.grp summary{font-size:12px;font-weight:700;color:#52606d;text-transform:uppercase;letter-spacing:.03em;cursor:pointer;padding:5px 4px;border-radius:5px}
+.grp summary:hover{background:#f1f5fa}
+.grp .antall-valgt{font-weight:400;text-transform:none;letter-spacing:normal}
+.tema{display:flex;align-items:flex-start;gap:8px;padding:4px 4px;border-radius:5px;cursor:pointer;line-height:1.3}
+.tema:hover{background:#f1f5fa}
+.tema input{margin-top:3px;width:18px;height:18px;flex:none}
+.tema .dag{font-weight:700;min-width:48px}
+.tema small{color:#6b7785;display:block}
+.radio{display:flex;gap:8px;align-items:flex-start;margin:4px 0;line-height:1.3;cursor:pointer}
+.radio input{margin-top:3px}
+.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:6px 0}
+.row label{font-size:13px;color:#52606d}
+.row input[type=text]{flex:1;min-width:110px;border:1px solid #9aa5b4;border-radius:5px;padding:6px 8px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 6px}
+#status{font-size:13px;color:#33404d;min-height:1.4em}
+.advarsel{background:#fff3cd;border:1px solid #c9972e;border-radius:6px;padding:10px;margin:10px 0;font-size:13px;line-height:1.4}
+.advarsel p{margin:0 0 8px}
+main{padding:16px;overflow:auto}
+.pages{display:flex;flex-direction:column;align-items:center;gap:16px;zoom:var(--z,1)}
+#empty{color:#52606d;text-align:center;padding:40px}
+.page{width:210mm;height:296mm;padding:15mm;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.25);overflow:hidden;break-after:page;page-break-after:always;color:#000}
+.page:not(.oversikt){font-family:"Trebuchet MS",Arial,Helvetica,sans-serif}
+.page:last-child{break-after:auto;page-break-after:auto}
+.titlerad{height:16mm;display:flex;align-items:flex-start;justify-content:space-between;gap:6mm}
+.titlerad h2{margin:0;font-size:18pt;line-height:1.15}
+.topptekst{font-size:10pt;color:#555;text-align:right;max-width:55mm;line-height:1.2;white-space:pre-line}
+.grid{display:grid;grid-auto-flow:column;grid-template-columns:repeat(2,90mm);grid-template-rows:repeat(8,30.5mm);border-top:.3mm solid #808080;border-left:.3mm solid #808080;width:180mm}
+.q{border-right:.3mm solid #808080;border-bottom:.3mm solid #808080;padding:1.8mm 2.2mm 3mm;font-size:22pt;line-height:1.2;overflow:hidden;white-space:nowrap;display:flex;align-items:flex-end}
+.q .nr{font-size:12pt;color:#707070;margin-right:2mm}
+.oversikt{page:oversikt;width:297mm;height:209mm;padding:10mm 12mm}
+.oversikt h2{font-size:17pt;margin:0 0 2mm}
+.oversikt p{font-size:10pt;margin:0 0 3mm}
+.oversikt table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:8pt}
+.oversikt th,.oversikt td{border:.25mm solid #808080}
+.oversikt th{height:8mm;text-align:center;padding:0}
+.oversikt th:first-child{width:54mm;text-align:left;padding-left:2mm}
+.oversikt td{height:5.2mm}
+.oversikt-forklaring{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1mm 4mm;margin-top:3mm;font-size:8pt;line-height:1.2}
+@media (max-width:900px){
+  .app{display:block}
+  .menu{position:static;max-height:none;border-right:none;border-bottom:1px solid #cfd6df}
+}
+@media print{
+  html,body{background:#fff}
+  .menu,#empty{display:none!important}
+  .app{display:block}
+  main{padding:0;overflow:visible}
+  .pages{display:block;zoom:1!important;gap:0}
+  .page{box-shadow:none;margin:0}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="menu" id="menu" aria-label="Meny">
+    <h1>Regneark - generator</h1>
+    <p class="hint">Hvert ark har 16 spørsmål. I øvingsmodus trener oddetallene arkets tema, mens partallene repeterer andre temaer. I kartleggingsmodus kommer alle oppgavene fra arkets tema.</p>
+
+    <fieldset>
+      <legend>1. Nye temaer (ett ark per tema)</legend>
+      <p class="hint">Trykk på et tallområde for å åpne eller lukke det. Valgte temaer beholdes når området lukkes.</p>
+      <div class="quick" id="nyQuick"></div>
+      <div id="nyList"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>2. Repetisjon (partallsspørsmål)</legend>
+      <label class="radio"><input type="checkbox" id="kartlegging"><span><b>Kartleggingsmodus</b><br><small>Alle 16 oppgavene på hvert ark er fra arkets tema, uten repetisjon.</small></span></label>
+      <p class="hint" id="kartleggingHint" hidden>Repetisjonsvalgene brukes ikke i kartleggingsmodus. De beholdes til du går tilbake til øvingsmodus.</p>
+      <div id="repInnstillinger">
+      <label class="radio"><input type="radio" name="rep" value="auto" id="repAuto"><span><b>Automatisk</b><br><small>Alle tidligere temaer i manuset. Temaer som ikke er repetert på en stund, kommer først.</small></span></label>
+      <label class="radio"><input type="radio" name="rep" value="eget" id="repEget"><span><b>Eget utvalg</b><br><small>Velg selv hvilke temaer som repeteres på alle arkene.</small></span></label>
+      <div id="repBox" hidden>
+        <div class="quick" id="repQuick"></div>
+        <div id="repList"></div>
+      </div>
+      <label class="radio" style="margin-top:8px"><input type="checkbox" id="vekt"><span>Vekt vanskelige oppgaver i repetisjonen<br><small>Flere oppgaver fra den høye delen av tallområdet.</small></span></label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>3. Innstillinger</legend>
+      <div class="row">
+        <label for="seed">Seed</label>
+        <input type="text" id="seed" inputmode="text" aria-describedby="seedHint">
+        <button type="button" id="reroll" class="small">Lag nye ark</button>
+      </div>
+      <p class="hint" id="seedHint" style="margin:0 0 8px">Samme valg og samme seed gir alltid samme ark.</p>
+      <label class="radio"><input type="checkbox" id="visTema"><span>Vis temanavn i overskriften<br><small>Nummeret vises alltid.</small></span></label>
+      <label class="radio"><input type="checkbox" id="hk"><span>Vis hefteområde øverst til høyre<br><small>F.eks. «1.1–2.1» når flere ark skrives ut samlet.</small></span></label>
+      <div class="row">
+        <label for="topp">Tekst i toppen (valgfri)</label>
+        <input type="text" id="topp" maxlength="60" placeholder="F.eks. Hefte 1 – 4A">
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>4. Velg hva du vil skrive ut</legend>
+      <label class="radio"><input type="radio" name="visning" value="oppgaver" checked><span><b>Oppgavehefte</b></span></label>
+      <label class="radio"><input type="radio" name="visning" value="fasit"><span><b>Fasithefte</b><br><small>Viser svarene til de samme oppgavene. Skriv ut eller lagre som en egen PDF.</small></span></label>
+      <label class="radio"><input type="radio" name="visning" value="oversikt"><span><b>Lærerens elevoversikt</b><br><small>Alle nivåer, med plass til 25 elever og avkryssing. Skrives ut i liggende A4.</small></span></label>
+    </fieldset>
+
+    <div class="actions">
+      <button type="button" id="print" class="primary">Skriv ut / lagre som PDF</button>
+      <button type="button" id="copy">Kopier tekst</button>
+      <button type="button" id="link">Kopier lenke</button>
+    </div>
+    <div id="gammelAdvarsel" class="advarsel" role="alert" hidden>
+      <p>Manuset er endret. Gamle temavalg er tilpasset; nivånumre og oppgaver kan ha endret seg. Det tidligere blandede nivået 3.9 er delt i 3.9 og 3.10; dersom det var valgt, er begge nå valgt. Tidligere ark og fasiter kan ikke nødvendigvis gjenskapes, selv med samme seed. Kontroller at fasiten hører til oppgaveheftet.</p>
+      <button type="button" class="small" id="lukkAdvarsel">Jeg har forstått</button>
+    </div>
+    <div id="status" role="status" aria-live="polite"></div>
+    <p class="hint">Tips ved utskrift: velg «Lagre som PDF» som skriver, papirstørrelse A4, skalering 100 %, og slå av «Topp- og bunntekst».</p>
+  </aside>
+
+  <main>
+    <div id="empty" hidden>Velg minst ett nytt tema i menyen for å lage ark.</div>
+    <div class="pages" id="pages"></div>
+  </main>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ------------------------------------------------------------------ manus */
+var RADER=8, SPM=16;
+var START_BIAS=3.0, BIAS_AVTAR=0.25, MIN_BIAS=0.5, GJ_FAKTA=0.35, GJ_TEKST=0.6;
+
+function O(a,b,form){
+  var s=a+b, f=form||'vanlig', t;
+  if(f==='hull_hoyre') t=a+' + ___ = '+s;
+  else if(f==='hull_venstre') t='___ + '+b+' = '+s;
+  else if(f==='fylle_tieren') t=a+' + '+b+' = 10 + ___';
+  else t=a+' + '+b+' =';
+  return {a:a,b:b,form:f,t:t,k:Math.min(a,b)+','+Math.max(a,b),s:(f==='fylle_tieren'?b:Math.max(a,b))};
+}
+function range(a,b){var r=[];for(var i=a;i<b;i++)r.push(i);return r;}
+function begge(par){
+  var ut=[],seen={};
+  par.forEach(function(p){
+    [[p[0],p[1]],[p[1],p[0]]].forEach(function(q){var k=q[0]+','+q[1];if(!seen[k]){seen[k]=1;ut.push(q);}});
+  });
+  return ut;
+}
+function plussN(n,tall){return begge(tall.map(function(x){return [x,n];})).map(function(p){return O(p[0],p[1]);});}
+function doblinger(tall){return tall.map(function(n){return O(n,n);});}
+function tallvenner(sum,tall){
+  var ut=[];
+  tall.forEach(function(a){ut.push(O(a,sum-a,'hull_hoyre'));ut.push(O(a,sum-a,'hull_venstre'));});
+  return ut;
+}
+function medFast(fast,tall){return begge(tall.map(function(x){return [fast,x];})).map(function(p){return O(p[0],p[1]);});}
+function sumTil10(){
+  var ut=[];
+  for(var a=1;a<10;a++)for(var b=1;b<10;b++)if(a+b>=3&&a+b<=10)ut.push(O(a,b));
+  return ut;
+}
+function blandet(tierovergang){
+  var ut=[];
+  for(var a=2;a<19;a++)for(var b=2;b<19;b++){
+    if(a>=10&&b>=10)continue;
+    if(a+b<=20&&((a%10+b%10>=10)===tierovergang))ut.push(O(a,b));
+  }
+  return ut;
+}
+function tema(navn,gruppe,oppg){
+  var vals=oppg.map(function(o){return o.s;});
+  var lav=Math.min.apply(null,vals),hoy=Math.max.apply(null,vals);
+  return {navn:navn,gruppe:gruppe,oppg:oppg,diff:oppg.map(function(o){return lav===hoy?0.5:(o.s-lav)/(hoy-lav);})};
+}
+var G5='Addisjon 0–5',G10='Addisjon 0–10',G20='Addisjon 0–20';
+var TEMAER=[
+  tema('Pluss 1 (0–5)',G5,plussN(1,range(0,5))),
+  tema('Pluss 2 (0–5)',G5,plussN(2,range(0,4))),
+  tema('Tallvenner til 4',G5,tallvenner(4,range(0,5))),
+  tema('Tallvenner til 5',G5,tallvenner(5,range(0,6))),
+  tema('Pluss 1 (0–10)',G10,plussN(1,range(3,10))),
+  tema('Pluss 2 (0–10)',G10,plussN(2,range(0,9))),
+  tema('Doblinger (sum til 10)',G10,doblinger(range(1,6))),
+  tema('Nærdoblinger (sum til 10)',G10,begge(range(1,5).map(function(n){return [n,n+1];})).map(function(p){return O(p[0],p[1]);})),
+  tema('5 + x',G10,medFast(5,range(1,5))),
+  tema('Tallvenner til 6',G10,tallvenner(6,range(0,7))),
+  tema('Tallvenner til 7',G10,tallvenner(7,range(0,8))),
+  tema('Tallvenner til 8',G10,tallvenner(8,range(0,9))),
+  tema('Tallvenner til 9',G10,tallvenner(9,range(0,10))),
+  tema('Pluss 3 (0–10)',G10,plussN(3,range(0,8))),
+  tema('Tiervenner (sum 10)',G10,tallvenner(10,range(0,11))),
+  tema('Addisjon med sum til 10',G10,sumTil10()),
+  tema('Pluss 1 (9–20)',G20,plussN(1,range(9,20))),
+  tema('Pluss 2 (9–20)',G20,plussN(2,range(9,19))),
+  tema('10 + x',G20,medFast(10,range(1,11))),
+  tema('Doblinger (sum til 20)',G20,doblinger(range(2,11))),
+  tema('20-venner (sum 20)',G20,tallvenner(20,range(1,20))),
+  tema('Pluss 3 (9–20)',G20,plussN(3,range(9,18))),
+  tema('Fylle tieren: 9 + x',G20,range(1,10).map(function(x){return O(9,x,'fylle_tieren');})),
+  tema('Nærdoblinger',G20,begge(range(1,10).map(function(n){return [n,n+1];})).map(function(p){return O(p[0],p[1]);})),
+  tema('Blandet addisjon uten tierovergang',G20,blandet(false)),
+  tema('Blandet addisjon med tierovergang',G20,blandet(true))
+];
+/* Nummer: gruppenummer.posisjon i gruppen (Addisjon 0–5 = 1.x, 0–10 = 2.x, 0–20 = 3.x). */
+(function(){
+  var nr={},ant=[];
+  TEMAER.forEach(function(t){
+    if(!(t.gruppe in nr)){ant.push(0);nr[t.gruppe]=ant.length;}
+    ant[nr[t.gruppe]-1]++;
+    t.gnr=nr[t.gruppe];
+    t.kode=t.gnr+'.'+ant[nr[t.gruppe]-1];
+  });
+})();
+function heftekode(temaer){
+  if(temaer.length<2)return '';
+  var sammenhengende=temaer.every(function(ti,i){return i===0||ti===temaer[i-1]+1;});
+  if(sammenhengende)return TEMAER[temaer[0]].kode+'–'+TEMAER[temaer[temaer.length-1]].kode;
+  var liste=temaer.map(function(ti){return TEMAER[ti].kode;});
+  return liste.length>6?liste.slice(0,6).join(', ')+' …':liste.join(', ');
+}
+
+/* ---------------------------------------------------------------- tilfeldig */
+function xmur3(str){
+  var h=1779033703^str.length;
+  for(var i=0;i<str.length;i++){h=Math.imul(h^str.charCodeAt(i),3432918353);h=(h<<13)|(h>>>19);}
+  return function(){h=Math.imul(h^(h>>>16),2246822507);h=Math.imul(h^(h>>>13),3266489909);h^=h>>>16;return h>>>0;};
+}
+function mulberry32(a){
+  return function(){
+    a|=0;a=(a+0x6D2B79F5)|0;
+    var t=Math.imul(a^(a>>>15),1|a);
+    t=(t+Math.imul(t^(t>>>7),61|t))^t;
+    return((t^(t>>>14))>>>0)/4294967296;
+  };
+}
+function makeRng(s){return mulberry32(xmur3(String(s))());}
+function shuffle(arr,rnd){
+  for(var i=arr.length-1;i>0;i--){var j=Math.floor(rnd()*(i+1));var t=arr[i];arr[i]=arr[j];arr[j]=t;}
+  return arr;
+}
+
+/* ---------------------------------------------------------- arkgenerering */
+function biasForDag(dag){return Math.max(MIN_BIAS,START_BIAS-BIAS_AVTAR*(dag-2));}
+
+function autoPlan(dag,seed){
+  if(dag===1)return range(0,RADER).map(function(){return 0;});
+  var sist={},plan=[];
+  for(var d=2;d<=dag;d++){
+    var rnd=makeRng(seed+'-plan-'+d);
+    var tidligere=range(0,d-1);
+    tidligere.forEach(function(i){if(!(i in sist))sist[i]=i+1;});
+    if(tidligere.length>=RADER){
+      plan=tidligere.map(function(i){return [sist[i],rnd(),i];})
+        .sort(function(x,y){return x[0]-y[0]||x[1]-y[1];})
+        .slice(0,RADER).map(function(x){return x[2];});
+    }else{
+      plan=tidligere.slice();
+      while(plan.length<RADER)plan.push(tidligere[Math.floor(rnd()*tidligere.length)]);
+    }
+    plan.forEach(function(i){sist[i]=d;});
+    shuffle(plan,rnd);
+  }
+  return plan;
+}
+function customPlan(dag,pool,seed){
+  var rnd=makeRng(seed+'-eget-'+dag+'-'+pool.join('.'));
+  var plan;
+  if(pool.length>=RADER){plan=shuffle(pool.slice(),rnd).slice(0,RADER);}
+  else{
+    plan=pool.slice();
+    while(plan.length<RADER)plan.push(pool[Math.floor(rnd()*pool.length)]);
+  }
+  return shuffle(plan,rnd);
+}
+
+function velg(t,bias,fa,ta,unna,rnd){
+  var idx=[];
+  t.oppg.forEach(function(o,i){if(!unna[o.t])idx.push(i);});
+  if(!idx.length)idx=t.oppg.map(function(_,i){return i;});
+  function bruk(i){var o=t.oppg[i];return [fa[o.k]||0,ta[o.t]||0];}
+  if(bias===0){
+    var best=null;
+    idx.forEach(function(i){var b=bruk(i);if(!best||b[0]<best[0]||(b[0]===best[0]&&b[1]<best[1]))best=b;});
+    var kand=idx.filter(function(i){var b=bruk(i);return b[0]===best[0]&&b[1]===best[1];});
+    return t.oppg[kand[Math.floor(rnd()*kand.length)]];
+  }
+  var vekter=idx.map(function(i){var b=bruk(i);return Math.exp(bias*t.diff[i])*Math.pow(GJ_FAKTA,b[0])*Math.pow(GJ_TEKST,b[1]);});
+  var tot=vekter.reduce(function(s,v){return s+v;},0);
+  var r=rnd()*tot,acc=0;
+  for(var k=0;k<idx.length;k++){acc+=vekter[k];if(r<acc)return t.oppg[idx[k]];}
+  return t.oppg[idx[idx.length-1]];
+}
+
+function lagArk(ti,ctx){
+  var dag=ti+1,plan,samme=false,poolKey='';
+  if(ctx.kartlegging){
+    plan=range(0,RADER).map(function(){return ti;});
+    samme=true;poolKey='-kartlegging';
+  }else if(ctx.rep==='eget'){
+    var pool=range(0,TEMAER.length).filter(function(i){return ctx.repSet[i]&&i!==ti;});
+    poolKey='-e'+pool.join('.');
+    if(!pool.length){plan=range(0,RADER).map(function(){return ti;});samme=true;}
+    else plan=customPlan(dag,pool,ctx.seed);
+  }else{
+    plan=autoPlan(dag,ctx.seed);
+    samme=(dag===1);
+  }
+  var rnd=makeRng(ctx.seed+'-oppgaver-'+dag+poolKey);
+  var bias=(samme||!ctx.vekt)?0:biasForDag(dag);
+  var fa={},ta={},spm=[];
+  for(var nr=1;nr<=SPM;nr++){
+    var tIdx,b;
+    if(nr%2===1){tIdx=ti;b=0;}else{tIdx=plan[nr/2-1];b=bias;}
+    var unna={};
+    if(nr>1&&(nr-1)%RADER!==0)unna[spm[nr-2].o.t]=1;
+    if(nr>RADER)unna[spm[nr-RADER-1].o.t]=1;
+    var o=velg(TEMAER[tIdx],b,fa,ta,unna,rnd);
+    fa[o.k]=(fa[o.k]||0)+1;ta[o.t]=(ta[o.t]||0)+1;
+    spm.push({o:o,ti:tIdx});
+  }
+  return {ti:ti,dag:dag,tema:TEMAER[ti],spm:spm};
+}
+
+/* ------------------------------------------------------------------ tilstand */
+var KEY='dagsark-generator-v1';
+function defaultState(){
+  return {v:6,ny:{0:1,1:1,2:1,3:1},rep:'auto',repSet:{},kartlegging:false,vekt:true,hk:true,visTema:true,seed:'2026',topp:'',gammel:false};
+}
+function setFromList(s){var o={};String(s||'').split(',').forEach(function(x){var n=parseInt(x,10);if(n>=1&&n<=TEMAER.length)o[n-1]=1;});return o;}
+function listFromSet(o){return Object.keys(o).map(Number).sort(function(a,b){return a-b;}).map(function(i){return i+1;}).join(',');}
+function flyttGamleValg(valg){
+  var resultat={};
+  Object.keys(valg).forEach(function(key){
+    var i=Number(key);
+    if(valg[key]&&i>=0&&i<19&&i!==2)resultat[i<2?i:i+1]=1;
+  });
+  return resultat;
+}
+function flyttV2Valg(valg){
+  var resultat={};
+  Object.keys(valg).forEach(function(key){
+    var i=Number(key);
+    if(valg[key]&&Number.isInteger(i)&&i>=0&&i<20)resultat[i<8?i:i+4]=1;
+  });
+  return resultat;
+}
+function oppdaterGamleValg(valg,versjon){
+  if(versjon===6)return valg;
+  if(versjon!==2&&versjon!==3&&versjon!==4&&versjon!==5)valg=flyttGamleValg(valg);
+  if(versjon!==3&&versjon!==4&&versjon!==5)valg=flyttV2Valg(valg);
+  if(versjon!==5){
+    var resultat={};
+    Object.keys(valg).forEach(function(key){
+      var i=Number(key);
+      if(valg[key]&&Number.isInteger(i)&&i>=0&&i<24)resultat[i<7?i:i+1]=1;
+    });
+    valg=resultat;
+  }
+  if(valg[24])valg[25]=1;
+  return valg;
+}
+function readHash(){
+  if(!location.hash||location.hash.length<2)return null;
+  try{
+    var p=new URLSearchParams(location.hash.slice(1));
+    var s=defaultState();
+    if(p.has('ny'))s.ny=setFromList(p.get('ny'));
+    if(p.get('rep')==='eget')s.rep='eget';
+    if(p.has('ep'))s.repSet=setFromList(p.get('ep'));
+    if(p.get('kartlegging')==='1')s.kartlegging=true;
+    if(p.get('vekt')==='0')s.vekt=false;
+    if(p.get('hk')==='0')s.hk=false;
+    if(p.get('tema')==='0')s.visTema=false;
+    if(p.has('seed'))s.seed=p.get('seed');
+    if(p.has('tekst'))s.topp=p.get('tekst');
+    var versjon=Number(p.get('v'));
+    if(versjon!==6){
+      if(p.has('ny'))s.ny=oppdaterGamleValg(s.ny,versjon);
+      if(p.has('ep'))s.repSet=oppdaterGamleValg(s.repSet,versjon);
+      s.gammel=true;
+    }else s.gammel=p.get('gammel')==='1';
+    return s;
+  }catch(e){return null;}
+}
+function writeHash(){
+  var p=new URLSearchParams();
+  p.set('v','6');
+  p.set('ny',listFromSet(state.ny));
+  p.set('rep',state.rep);
+  if(state.rep==='eget')p.set('ep',listFromSet(state.repSet));
+  if(state.kartlegging)p.set('kartlegging','1');
+  if(!state.vekt)p.set('vekt','0');
+  if(!state.hk)p.set('hk','0');
+  if(!state.visTema)p.set('tema','0');
+  p.set('seed',state.seed);
+  if(state.topp)p.set('tekst',state.topp);
+  if(state.gammel)p.set('gammel','1');
+  try{history.replaceState(null,'','#'+p.toString());}catch(e){}
+}
+function loadState(){
+  var s=readHash();
+  if(s)return s;
+  try{
+    var raw=localStorage.getItem(KEY);
+    if(raw){var o=JSON.parse(raw);var d=defaultState(),gammel=o.v!==6;
+      return {v:6,ny:gammel&&o.ny?oppdaterGamleValg(o.ny,o.v):o.ny||d.ny,rep:o.rep==='eget'?'eget':'auto',repSet:gammel?oppdaterGamleValg(o.repSet||{},o.v):o.repSet||{},kartlegging:o.kartlegging===true,vekt:o.vekt!==false,hk:o.hk!==false,visTema:o.visTema!==false,seed:o.seed||d.seed,topp:o.topp||'',gammel:gammel||o.gammel===true};}
+  }catch(e){}
+  return defaultState();
+}
+var state=loadState();
+
+/* ----------------------------------------------------------------------- UI */
+function $(id){return document.getElementById(id);}
+function el(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e;}
+
+function buildList(container,name,selectedObj,onChange){
+  container.textContent='';
+  var last=null,gruppe;
+  TEMAER.forEach(function(t,i){
+    if(t.gruppe!==last){
+      gruppe=el('details','grp');gruppe.open=true;
+      var overskrift=el('summary',null,t.gnr+' · '+t.gruppe+' ');
+      overskrift.append(el('span','antall-valgt'));
+      gruppe.append(overskrift);container.append(gruppe);last=t.gruppe;
+    }
+    var lab=el('label','tema');
+    var cb=document.createElement('input');cb.type='checkbox';cb.dataset.i=i;cb.dataset.list=name;
+    cb.addEventListener('change',function(){
+      if(cb.checked)selectedObj()[i]=1;else delete selectedObj()[i];
+      onChange();
+    });
+    var txt=el('span');
+    txt.append(el('span','dag',t.kode+' '));
+    txt.append(document.createTextNode(t.navn));
+    var antall=t.oppg.length;
+    txt.append(el('small',null,antall+(antall===1?' oppgave':' oppgaver')+(antall<=4?' – gjentas ofte':'')));
+    lab.append(cb,txt);
+    gruppe.append(lab);
+  });
+}
+function syncChecks(container,obj){
+  container.querySelectorAll('input[type=checkbox]').forEach(function(cb){cb.checked=!!obj[cb.dataset.i];});
+  container.querySelectorAll('details.grp').forEach(function(gruppe){
+    var valgt=gruppe.querySelectorAll('input[type=checkbox]:checked').length;
+    gruppe.querySelector('.antall-valgt').textContent='('+valgt+' valgt)';
+  });
+}
+function quickButton(label,fn){var b=el('button','small',label);b.type='button';b.addEventListener('click',fn);return b;}
+
+function buildQuick(){
+  var q=$('nyQuick');q.textContent='';
+  for(var s=0;s<TEMAER.length;s+=4){
+    (function(from){
+      var to=Math.min(from+4,TEMAER.length);
+      q.append(quickButton('Hefte '+(from/4+1)+' ('+TEMAER[from].kode+'–'+TEMAER[to-1].kode+')',function(){
+        state.ny={};for(var i=from;i<to;i++)state.ny[i]=1;changed();
+      }));
+    })(s);
+  }
+  q.append(quickButton('Alle',function(){state.ny={};range(0,TEMAER.length).forEach(function(i){state.ny[i]=1;});changed();}));
+  q.append(quickButton('Ingen',function(){state.ny={};changed();}));
+  var r=$('repQuick');r.textContent='';
+  r.append(quickButton('Alle',function(){state.repSet={};range(0,TEMAER.length).forEach(function(i){state.repSet[i]=1;});changed();}));
+  r.append(quickButton('Ingen',function(){state.repSet={};changed();}));
+  r.append(quickButton('Som nye temaer',function(){state.repSet=JSON.parse(JSON.stringify(state.ny));changed();}));
+}
+
+function currentCtx(){return {seed:state.seed,rep:state.rep,repSet:state.repSet,kartlegging:state.kartlegging,vekt:state.vekt};}
+function valgteTemaer(){return Object.keys(state.ny).map(Number).sort(function(a,b){return a-b;});}
+
+function toppTekst(temaer){
+  var deler=[];
+  if(state.kartlegging)deler.push('Kartlegging');
+  if(state.hk){var k=heftekode(temaer);if(k)deler.push(k);}
+  if(state.topp)deler.push(state.topp);
+  return deler.join('\n');
+}
+function oppgaveTekst(o,fasit){
+  if(!fasit)return o.t;
+  if(o.form==='vanlig')return o.t+' '+(o.a+o.b);
+  if(o.form==='hull_hoyre')return o.t.replace('___',o.b);
+  if(o.form==='hull_venstre')return o.t.replace('___',o.a);
+  if(o.form==='fylle_tieren')return o.t.replace('___',o.a+o.b-10);
+  throw new Error('Ukjent oppgaveform: '+o.form);
+}
+function erFasit(){return document.querySelector('input[name=visning]:checked').value==='fasit';}
+function erOversikt(){return document.querySelector('input[name=visning]:checked').value==='oversikt';}
+function arkTittel(ark,fasit){return (fasit?'Fasit – ':'')+ark.tema.kode+(state.visTema?' '+ark.tema.navn:'');}
+function sheetNode(ark,topp,fasit){
+  var side=el('section','page');
+  side.setAttribute('aria-label',arkTittel(ark,fasit));
+  var rad=el('div','titlerad');
+  rad.append(el('h2',null,arkTittel(ark,fasit)));
+  if(topp)rad.append(el('div','topptekst',topp));
+  side.append(rad);
+  var grid=el('div','grid');
+  ark.spm.forEach(function(s,i){
+    var q=el('div','q');
+    q.append(el('span','nr',(i+1)+'.'),document.createTextNode(oppgaveTekst(s.o,fasit)));
+    grid.append(q);
+  });
+  side.append(grid);
+  return side;
+}
+
+function oversiktNode(temaer){
+  var side=el('section','page oversikt');
+  side.setAttribute('aria-label','Elevoversikt for addisjon');
+  side.append(el('h2',null,'Elevoversikt – addisjon'));
+  side.append(el('p',null,'Klasse/gruppe: ____________________    Kryss av når eleven har jobbet med nivået.'));
+  var table=el('table'),head=el('thead'),row=el('tr');
+  var navn=el('th',null,'Elevnavn');navn.scope='col';row.append(navn);
+  temaer.forEach(function(t){var th=el('th',null,t.kode);th.scope='col';row.append(th);});
+  head.append(row);table.append(head);
+  var body=el('tbody');
+  for(var i=0;i<25;i++){
+    row=el('tr');
+    for(var j=0;j<=temaer.length;j++)row.append(el('td'));
+    body.append(row);
+  }
+  table.append(body);side.append(table);
+  var forklaring=el('div','oversikt-forklaring');
+  temaer.forEach(function(t){forklaring.append(el('div',null,t.kode+' '+t.navn));});
+  side.append(forklaring);
+  return side;
+}
+
+function renderSheets(){
+  var temaer=valgteTemaer(),pages=$('pages');
+  pages.textContent='';
+  var oversikt=erOversikt();
+  $('empty').hidden=oversikt||temaer.length>0;
+  if(oversikt){
+    for(var i=0;i<TEMAER.length;i+=26)pages.append(oversiktNode(TEMAER.slice(i,i+26)));
+    $('status').textContent='Elevoversikt klar · alle nivåer';
+    fitZoom();
+    return;
+  }
+  var ctx=currentCtx(),topp=toppTekst(temaer),fasit=erFasit();
+  temaer.forEach(function(ti){pages.append(sheetNode(lagArk(ti,ctx),topp,fasit));});
+  var n=temaer.length;
+  $('status').textContent=n?(n+(fasit?' fasitark':' ark')+' klare · '+(state.kartlegging?'kartlegging':'øving')+' · seed «'+state.seed+'»'):'';
+  fitZoom();
+}
+
+function fitZoom(){
+  var main=document.querySelector('main');
+  var w=main.clientWidth-32;
+  var page=erOversikt()?1122.5:793.7;
+  var z=w>0?Math.min(1,w/page):1;
+  $('pages').style.setProperty('--z',z.toFixed(3));
+}
+
+function syncControls(){
+  syncChecks($('nyList'),state.ny);
+  syncChecks($('repList'),state.repSet);
+  $('repAuto').checked=state.rep==='auto';
+  $('repEget').checked=state.rep==='eget';
+  $('repBox').hidden=state.rep!=='eget';
+  $('kartlegging').checked=state.kartlegging;
+  $('kartleggingHint').hidden=!state.kartlegging;
+  $('repInnstillinger').querySelectorAll('input,button').forEach(function(control){control.disabled=state.kartlegging;});
+  $('vekt').checked=state.vekt;
+  $('hk').checked=state.hk;
+  $('visTema').checked=state.visTema;
+  $('gammelAdvarsel').hidden=!state.gammel;
+  $('seed').value=state.seed;
+  $('topp').value=state.topp;
+}
+
+function persist(){
+  try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}
+  writeHash();
+}
+function changed(){syncControls();renderSheets();persist();}
+
+function plainText(){
+  if(erOversikt()){
+    var lines=['Elevoversikt – addisjon','Klasse/gruppe:','Elevnavn\t'+TEMAER.map(function(t){return t.kode;}).join('\t')];
+    for(var i=0;i<25;i++)lines.push(TEMAER.map(function(){return '';}).join('\t')+'\t');
+    lines.push('', 'Nivåer:');
+    TEMAER.forEach(function(t){lines.push(t.kode+' '+t.navn);});
+    return lines.join('\n');
+  }
+  var ctx=currentCtx(),out=[],fasit=erFasit();
+  valgteTemaer().forEach(function(ti){
+    var ark=lagArk(ti,ctx);
+    out.push((state.kartlegging?'Kartlegging – ':'')+arkTittel(ark,fasit));
+    ark.spm.forEach(function(s,i){out.push((i+1)+'. '+oppgaveTekst(s.o,fasit));});
+    out.push('');
+  });
+  return out.join('\n').replace(/\n+$/,'\n');
+}
+function copyToClipboard(text,okMsg){
+  function fallback(){
+    var ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.append(ta);ta.select();
+    var ok=false;try{ok=document.execCommand('copy');}catch(e){}
+    ta.remove();
+    $('status').textContent=ok?okMsg:'Kunne ikke kopiere. Marker teksten på arkene og kopier manuelt.';
+  }
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){$('status').textContent=okMsg;},fallback);
+  }else fallback();
+}
+
+function init(){
+  buildList($('nyList'),'ny',function(){return state.ny;},changed);
+  buildList($('repList'),'rep',function(){return state.repSet;},changed);
+  buildQuick();
+  document.querySelectorAll('input[name=rep]').forEach(function(r){
+    r.addEventListener('change',function(){state.rep=r.value;changed();});
+  });
+  document.querySelectorAll('input[name=visning]').forEach(function(r){
+    r.addEventListener('change',renderSheets);
+  });
+  $('vekt').addEventListener('change',function(){state.vekt=$('vekt').checked;changed();});
+  $('kartlegging').addEventListener('change',function(){state.kartlegging=$('kartlegging').checked;changed();});
+  $('hk').addEventListener('change',function(){state.hk=$('hk').checked;changed();});
+  $('visTema').addEventListener('change',function(){state.visTema=$('visTema').checked;changed();});
+  $('lukkAdvarsel').addEventListener('click',function(){state.gammel=false;changed();});
+  $('seed').addEventListener('input',function(){state.seed=$('seed').value.trim()||'2026';renderSheets();persist();});
+  $('topp').addEventListener('input',function(){state.topp=$('topp').value;renderSheets();persist();});
+  $('reroll').addEventListener('click',function(){
+    state.seed=String(Math.floor(Math.random()*900000)+100000);
+    changed();
+  });
+  $('print').addEventListener('click',function(){
+    if(!erOversikt()&&!valgteTemaer().length){$('status').textContent='Velg minst ett nytt tema først.';return;}
+    window.print();
+  });
+  $('copy').addEventListener('click',function(){
+    if(!erOversikt()&&!valgteTemaer().length){$('status').textContent='Velg minst ett nytt tema først.';return;}
+    copyToClipboard(plainText(),'Teksten er kopiert.');
+  });
+  $('link').addEventListener('click',function(){copyToClipboard(location.href,'Lenken er kopiert.');});
+  window.addEventListener('resize',fitZoom);
+  window.addEventListener('hashchange',function(){var s=readHash();if(s){state=s;syncControls();renderSheets();}});
+  syncControls();
+  renderSheets();
+  writeHash();
+}
+init();
+})();
+</script>
+</body>
+</html>
