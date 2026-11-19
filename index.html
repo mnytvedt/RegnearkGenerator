@@ -52,8 +52,17 @@ main{padding:16px;overflow:auto}
 .titlerad h2{margin:0;font-size:18pt;line-height:1.15}
 .topptekst{font-size:10pt;color:#555;text-align:right;max-width:55mm;line-height:1.2;white-space:pre-line}
 .grid{display:grid;grid-auto-flow:column;grid-template-columns:repeat(2,90mm);grid-template-rows:repeat(8,30.5mm);border-top:.3mm solid #808080;border-left:.3mm solid #808080;width:180mm}
-.q{border-right:.3mm solid #808080;border-bottom:.3mm solid #808080;padding:1.8mm 2.2mm 3mm;font-size:22pt;line-height:1.2;overflow:hidden;white-space:nowrap;display:flex;align-items:flex-end}
+.q{position:relative;border-right:.3mm solid #808080;border-bottom:.3mm solid #808080;padding:1.8mm 2.2mm 3mm;font-size:22pt;line-height:1.2;overflow:hidden;white-space:nowrap;display:flex;align-items:flex-end}
 .q .nr{font-size:12pt;color:#707070;margin-right:2mm}
+.q.egenretting{padding-right:17mm}
+.rettemerker{position:absolute;right:1.5mm;bottom:1.5mm;display:flex;gap:1mm;font-family:Arial,Helvetica,sans-serif;font-size:10pt;line-height:1}
+.rettemerker span{display:flex;align-items:center;justify-content:center;width:5.5mm;height:5.5mm}
+.opptelling{height:5mm;display:flex;justify-content:flex-end;align-items:flex-end;gap:8mm;font-size:10pt;line-height:1}
+.sirkler{position:absolute;top:1.8mm;left:2.2mm;display:grid;grid-template-columns:repeat(10,5mm);gap:1.5mm}
+.sirkel{width:5mm;height:5mm;border:.5mm solid #000;border-radius:50%}
+.terninger{position:absolute;top:1.8mm;left:2.2mm;display:flex;gap:2mm}
+.terning{width:10mm;height:10mm;border:.5mm solid #000;border-radius:1mm;padding:.7mm;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr)}
+.terning .prikk{display:flex;align-items:center;justify-content:center;font-family:Arial,Helvetica,sans-serif;font-size:6pt;line-height:1}
 .oversikt{page:oversikt;width:297mm;height:209mm;padding:10mm 12mm}
 .oversikt h2{font-size:17pt;margin:0 0 2mm}
 .oversikt p{font-size:10pt;margin:0 0 3mm}
@@ -114,6 +123,9 @@ main{padding:16px;overflow:auto}
         <button type="button" id="reroll" class="small">Lag nye ark</button>
       </div>
       <p class="hint" id="seedHint" style="margin:0 0 8px">Samme valg og samme seed gir alltid samme ark.</p>
+      <label class="radio"><input type="checkbox" id="visSirkler"><span>Vis sirkler på tallvennoppgaver til og med 20<br><small>Tomme sirkler viser summen, også i repetisjonsoppgaver og fasit.</small></span></label>
+      <label class="radio"><input type="checkbox" id="visTerninger"><span>Vis terninger på oppgaver fra addisjon 0–5<br><small>Én terning per synlige ledd, også ved repetisjon og i fasit. Sirkler vises i stedet på tallvenner når begge valg er på.</small></span></label>
+      <label class="radio"><input type="checkbox" id="egenretting"><span>Vis egenretting på oppgaveark<br><small>Merk rett eller feil på hver oppgave og tell opp nederst på siden.</small></span></label>
       <label class="radio"><input type="checkbox" id="visTema"><span>Vis temanavn i overskriften<br><small>Nummeret vises alltid.</small></span></label>
       <label class="radio"><input type="checkbox" id="hk"><span>Vis hefteområde øverst til høyre<br><small>F.eks. «1.1–2.1» når flere ark skrives ut samlet.</small></span></label>
       <div class="row">
@@ -126,7 +138,7 @@ main{padding:16px;overflow:auto}
       <legend>4. Velg hva du vil skrive ut</legend>
       <label class="radio"><input type="radio" name="visning" value="oppgaver" checked><span><b>Oppgavehefte</b></span></label>
       <label class="radio"><input type="radio" name="visning" value="fasit"><span><b>Fasithefte</b><br><small>Viser svarene til de samme oppgavene. Skriv ut eller lagre som en egen PDF.</small></span></label>
-      <label class="radio"><input type="radio" name="visning" value="oversikt"><span><b>Lærerens elevoversikt</b><br><small>Alle nivåer, med plass til 25 elever og avkryssing. Skrives ut i liggende A4.</small></span></label>
+      <label class="radio"><input type="radio" name="visning" value="oversikt"><span><b>Lærerens elevoversikt</b><br><small>Alle nivåer, med plass til 25 elever og avkryssing. Skrives ut på flere liggende A4-ark.</small></span></label>
     </fieldset>
 
     <div class="actions">
@@ -173,10 +185,15 @@ function begge(par){
   return ut;
 }
 function plussN(n,tall){return begge(tall.map(function(x){return [x,n];})).map(function(p){return O(p[0],p[1]);});}
+function parOppgaver(par){return begge(par).map(function(p){return O(p[0],p[1]);});}
 function doblinger(tall){return tall.map(function(n){return O(n,n);});}
 function tallvenner(sum,tall){
   var ut=[];
-  tall.forEach(function(a){ut.push(O(a,sum-a,'hull_hoyre'));ut.push(O(a,sum-a,'hull_venstre'));});
+  tall.forEach(function(a){
+    var hoyre=O(a,sum-a,'hull_hoyre'),venstre=O(a,sum-a,'hull_venstre');
+    hoyre.tallvenn=true;venstre.tallvenn=true;
+    ut.push(hoyre,venstre);
+  });
   return ut;
 }
 function medFast(fast,tall){return begge(tall.map(function(x){return [fast,x];})).map(function(p){return O(p[0],p[1]);});}
@@ -193,12 +210,18 @@ function blandet(tierovergang){
   }
   return ut;
 }
+function heleTiere(min,max){return range(min,max+1).filter(function(n){return n%10===0;});}
+function kombiner(tall,tillegg,passer){
+  var par=[];
+  tall.forEach(function(a){tillegg.forEach(function(b){if(passer(a,b))par.push([a,b]);});});
+  return parOppgaver(par);
+}
 function tema(navn,gruppe,oppg){
   var vals=oppg.map(function(o){return o.s;});
   var lav=Math.min.apply(null,vals),hoy=Math.max.apply(null,vals);
   return {navn:navn,gruppe:gruppe,oppg:oppg,diff:oppg.map(function(o){return lav===hoy?0.5:(o.s-lav)/(hoy-lav);})};
 }
-var G5='Addisjon 0–5',G10='Addisjon 0–10',G20='Addisjon 0–20';
+var G5='Addisjon 0–5',G10='Addisjon 0–10',G20='Addisjon 0–20',G100='Addisjon 0–100';
 var TEMAER=[
   tema('Pluss 1 (0–5)',G5,plussN(1,range(0,5))),
   tema('Pluss 2 (0–5)',G5,plussN(2,range(0,4))),
@@ -225,7 +248,16 @@ var TEMAER=[
   tema('Fylle tieren: 9 + x',G20,range(1,10).map(function(x){return O(9,x,'fylle_tieren');})),
   tema('Nærdoblinger',G20,begge(range(1,10).map(function(n){return [n,n+1];})).map(function(p){return O(p[0],p[1]);})),
   tema('Blandet addisjon uten tierovergang',G20,blandet(false)),
-  tema('Blandet addisjon med tierovergang',G20,blandet(true))
+  tema('Blandet addisjon med tierovergang',G20,blandet(true)),
+  tema('Hel tier + 1, 2 eller 3',G100,kombiner(heleTiere(10,90),range(1,4),function(){return true;})),
+  tema('Hel tier + ener uten tierovergang',G100,kombiner(heleTiere(10,90),range(1,10),function(){return true;})),
+  tema('Fra 5, 15, 25 … uten tierovergang',G100,kombiner(range(5,100).filter(function(n){return n%10===5;}),range(1,5),function(){return true;})),
+  tema('Doblinger av hele tiere',G100,doblinger(heleTiere(10,50))),
+  tema('Hel tier + hel tier',G100,kombiner(heleTiere(10,90),heleTiere(10,90),function(a,b){return a+b<=100;})),
+  tema('Tosifret tall + hel tier',G100,kombiner(range(10,100),heleTiere(10,90),function(a,b){return a+b<=100;})),
+  tema('Hundrervenner med hele tiere',G100,tallvenner(100,heleTiere(10,90))),
+  tema('Tosifret tall + 1 med tierovergang',G100,plussN(1,range(10,100).filter(function(n){return n%10===9;}))),
+  tema('Tosifret tall + 11',G100,plussN(11,range(10,90)))
 ];
 /* Nummer: gruppenummer.posisjon i gruppen (Addisjon 0–5 = 1.x, 0–10 = 2.x, 0–20 = 3.x). */
 (function(){
@@ -350,7 +382,7 @@ function lagArk(ti,ctx){
 /* ------------------------------------------------------------------ tilstand */
 var KEY='dagsark-generator-v1';
 function defaultState(){
-  return {v:6,ny:{0:1,1:1,2:1,3:1},rep:'auto',repSet:{},kartlegging:false,vekt:true,hk:true,visTema:true,seed:'2026',topp:'',gammel:false};
+  return {v:6,ny:{0:1,1:1,2:1,3:1},rep:'auto',repSet:{},kartlegging:false,vekt:true,hk:true,visTema:true,visSirkler:false,visTerninger:false,egenretting:false,seed:'2026',topp:'',gammel:false};
 }
 function setFromList(s){var o={};String(s||'').split(',').forEach(function(x){var n=parseInt(x,10);if(n>=1&&n<=TEMAER.length)o[n-1]=1;});return o;}
 function listFromSet(o){return Object.keys(o).map(Number).sort(function(a,b){return a-b;}).map(function(i){return i+1;}).join(',');}
@@ -397,6 +429,9 @@ function readHash(){
     if(p.get('vekt')==='0')s.vekt=false;
     if(p.get('hk')==='0')s.hk=false;
     if(p.get('tema')==='0')s.visTema=false;
+    if(p.get('sirkler')==='1')s.visSirkler=true;
+    if(p.get('terninger')==='1')s.visTerninger=true;
+    if(p.get('egenretting')==='1')s.egenretting=true;
     if(p.has('seed'))s.seed=p.get('seed');
     if(p.has('tekst'))s.topp=p.get('tekst');
     var versjon=Number(p.get('v'));
@@ -418,6 +453,9 @@ function writeHash(){
   if(!state.vekt)p.set('vekt','0');
   if(!state.hk)p.set('hk','0');
   if(!state.visTema)p.set('tema','0');
+  if(state.visSirkler)p.set('sirkler','1');
+  if(state.visTerninger)p.set('terninger','1');
+  if(state.egenretting)p.set('egenretting','1');
   p.set('seed',state.seed);
   if(state.topp)p.set('tekst',state.topp);
   if(state.gammel)p.set('gammel','1');
@@ -429,7 +467,7 @@ function loadState(){
   try{
     var raw=localStorage.getItem(KEY);
     if(raw){var o=JSON.parse(raw);var d=defaultState(),gammel=o.v!==6;
-      return {v:6,ny:gammel&&o.ny?oppdaterGamleValg(o.ny,o.v):o.ny||d.ny,rep:o.rep==='eget'?'eget':'auto',repSet:gammel?oppdaterGamleValg(o.repSet||{},o.v):o.repSet||{},kartlegging:o.kartlegging===true,vekt:o.vekt!==false,hk:o.hk!==false,visTema:o.visTema!==false,seed:o.seed||d.seed,topp:o.topp||'',gammel:gammel||o.gammel===true};}
+      return {v:6,ny:gammel&&o.ny?oppdaterGamleValg(o.ny,o.v):o.ny||d.ny,rep:o.rep==='eget'?'eget':'auto',repSet:gammel?oppdaterGamleValg(o.repSet||{},o.v):o.repSet||{},kartlegging:o.kartlegging===true,vekt:o.vekt!==false,hk:o.hk!==false,visTema:o.visTema!==false,visSirkler:o.visSirkler===true,visTerninger:o.visTerninger===true,egenretting:o.egenretting===true,seed:o.seed||d.seed,topp:o.topp||'',gammel:gammel||o.gammel===true};}
   }catch(e){}
   return defaultState();
 }
@@ -511,6 +549,22 @@ function oppgaveTekst(o,fasit){
 }
 function erFasit(){return document.querySelector('input[name=visning]:checked').value==='fasit';}
 function erOversikt(){return document.querySelector('input[name=visning]:checked').value==='oversikt';}
+function visSirklerFor(o){return state.visSirkler&&o.tallvenn&&o.a+o.b<=20;}
+function terningtall(s){
+  if(!state.visTerninger||TEMAER[s.ti].gruppe!==G5||visSirklerFor(s.o))return [];
+  var o=s.o,tall=[];
+  if(o.form!=='hull_venstre')tall.push(o.a);
+  if(o.form!=='hull_hoyre')tall.push(o.b);
+  return tall;
+}
+var PRIKKER=[[],[4],[0,8],[0,4,8],[0,2,6,8],[0,2,4,6,8]];
+function terningNode(tall){
+  var terning=el('div','terning');
+  terning.setAttribute('role','img');
+  terning.setAttribute('aria-label','Terning med '+tall+' prikker');
+  for(var i=0;i<9;i++)terning.append(el('span','prikk',PRIKKER[tall].indexOf(i)>=0?'●':''));
+  return terning;
+}
 function arkTittel(ark,fasit){return (fasit?'Fasit – ':'')+ark.tema.kode+(state.visTema?' '+ark.tema.navn:'');}
 function sheetNode(ark,topp,fasit){
   var side=el('section','page');
@@ -521,11 +575,36 @@ function sheetNode(ark,topp,fasit){
   side.append(rad);
   var grid=el('div','grid');
   ark.spm.forEach(function(s,i){
-    var q=el('div','q');
+    var q=el('div',state.egenretting&&!fasit?'q egenretting':'q');
+    if(visSirklerFor(s.o)){
+      var sirkler=el('div','sirkler');
+      sirkler.setAttribute('role','img');
+      sirkler.setAttribute('aria-label',(s.o.a+s.o.b)+' tomme sirkler');
+      for(var j=0;j<s.o.a+s.o.b;j++)sirkler.append(el('span','sirkel'));
+      q.append(sirkler);
+    }else{
+      var tall=terningtall(s);
+      if(tall.length){
+        var terninger=el('div','terninger');
+        tall.forEach(function(n){terninger.append(terningNode(n));});
+        q.append(terninger);
+      }
+    }
     q.append(el('span','nr',(i+1)+'.'),document.createTextNode(oppgaveTekst(s.o,fasit)));
+    if(state.egenretting&&!fasit){
+      var merker=el('div','rettemerker');
+      merker.setAttribute('aria-label','Marker rett eller feil');
+      merker.append(el('span',null,'✓'),el('span',null,'✗'));
+      q.append(merker);
+    }
     grid.append(q);
   });
   side.append(grid);
+  if(state.egenretting&&!fasit){
+    var opptelling=el('div','opptelling');
+    opptelling.append(el('span',null,'✓: ______'),el('span',null,'✗: ______'));
+    side.append(opptelling);
+  }
   return side;
 }
 
@@ -589,6 +668,9 @@ function syncControls(){
   $('vekt').checked=state.vekt;
   $('hk').checked=state.hk;
   $('visTema').checked=state.visTema;
+  $('visSirkler').checked=state.visSirkler;
+  $('visTerninger').checked=state.visTerninger;
+  $('egenretting').checked=state.egenretting;
   $('gammelAdvarsel').hidden=!state.gammel;
   $('seed').value=state.seed;
   $('topp').value=state.topp;
@@ -612,7 +694,15 @@ function plainText(){
   valgteTemaer().forEach(function(ti){
     var ark=lagArk(ti,ctx);
     out.push((state.kartlegging?'Kartlegging – ':'')+arkTittel(ark,fasit));
-    ark.spm.forEach(function(s,i){out.push((i+1)+'. '+oppgaveTekst(s.o,fasit));});
+    ark.spm.forEach(function(s,i){
+      if(visSirklerFor(s.o))out.push(Array(s.o.a+s.o.b+1).join('○ ').trim());
+      else{
+        var tall=terningtall(s);
+        if(tall.length)out.push(tall.map(function(n){return ['□','⚀','⚁','⚂','⚃','⚄'][n];}).join(' '));
+      }
+      out.push((i+1)+'. '+oppgaveTekst(s.o,fasit)+(state.egenretting&&!fasit?'  ✓  ✗':''));
+    });
+    if(state.egenretting&&!fasit)out.push('✓: ______    ✗: ______');
     out.push('');
   });
   return out.join('\n').replace(/\n+$/,'\n');
@@ -644,6 +734,9 @@ function init(){
   $('kartlegging').addEventListener('change',function(){state.kartlegging=$('kartlegging').checked;changed();});
   $('hk').addEventListener('change',function(){state.hk=$('hk').checked;changed();});
   $('visTema').addEventListener('change',function(){state.visTema=$('visTema').checked;changed();});
+  $('visSirkler').addEventListener('change',function(){state.visSirkler=$('visSirkler').checked;changed();});
+  $('visTerninger').addEventListener('change',function(){state.visTerninger=$('visTerninger').checked;changed();});
+  $('egenretting').addEventListener('change',function(){state.egenretting=$('egenretting').checked;changed();});
   $('lukkAdvarsel').addEventListener('click',function(){state.gammel=false;changed();});
   $('seed').addEventListener('input',function(){state.seed=$('seed').value.trim()||'2026';renderSheets();persist();});
   $('topp').addEventListener('input',function(){state.topp=$('topp').value;renderSheets();persist();});
